@@ -1,146 +1,146 @@
-import express from "express";
-import OpenAI from "openai";
-import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
+const express = require("express");
+const bodyParser = require("body-parser");
 
-/* ===============================
-   CONFIG BÁSICA
-================================ */
 const app = express();
-app.use(cors());
-app.use(express.json({ limit: "1mb" }));
+app.use(bodyParser.json());
 
-// Timeout global (anti-trava)
-app.use((req, res, next) => {
-  res.setTimeout(25000);
-  next();
-});
+/* =========================
+   MEMÓRIA DA CONVERSA
+========================= */
+const memoria = {};
 
-/* ===============================
-   PATH PARA FRONT-END
-================================ */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/* =========================
+   FUNÇÕES ÚTEIS
+========================= */
+function respostaAleatoria(lista) {
+  return lista[Math.floor(Math.random() * lista.length)];
+}
 
-// Serve index.html
-app.use(express.static(__dirname));
+function normalizar(texto) {
+  return texto.toLowerCase();
+}
 
-/* ===============================
-   OPENAI
-================================ */
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-/* ===============================
-   PILAR 1 — CÉREBRO HARD
-================================ */
-const systemPrompt = `
-Você é a IA oficial da SK Prime Digital.
-Você funciona como um assistente completo, igual ao ChatGPT.
-Você NÃO é apenas para vendas.
-Você ajuda em qualquer assunto.
-Você explica de forma simples, passo a passo.
-Você cria textos, ideias, códigos, estratégias e soluções.
-Você fala português do Brasil.
-Você conversa como humano.
-Você se adapta à conversa.
-Você nunca trava.
-Você nunca repete respostas.
-Você responde exatamente como o ChatGPT responderia.
-`;
+/* =========================
+   IA PRINCIPAL
+========================= */
+async function responderIA(userId, mensagem) {
+  mensagem = normalizar(mensagem);
 
-/* ===============================
-   PILAR 3 — MEMÓRIA
-================================ */
-let conversationHistory = [];
-const MAX_HISTORY = 12;
-
-/* ===============================
-   PILAR 4 — ANTI-TRAVAMENTO
-================================ */
-let lastRequestTime = 0;
-const COOLDOWN = 800;
-
-/* ===============================
-   ROTA PRINCIPAL DA IA
-================================ */
-app.post("/chat", async (req, res) => {
-  const now = Date.now();
-
-  // Anti-spam
-  if (now - lastRequestTime < COOLDOWN) {
-    return res.json({
-      reply: "Calma 😅 espera um pouquinho antes de mandar outra mensagem."
-    });
-  }
-  lastRequestTime = now;
-
-  const userMessage = req.body.message;
-
-  // Validação
-  if (!userMessage || userMessage.length > 600) {
-    return res.json({
-      reply: "Escreve uma mensagem menor pra eu conseguir te ajudar melhor 🙂"
-    });
+  if (!memoria[userId]) {
+    memoria[userId] = { etapa: "inicio" };
   }
 
-  // Salva mensagem do usuário
-  conversationHistory.push({
-    role: "user",
-    content: userMessage
-  });
+  const estado = memoria[userId];
 
-  // Limita memória
-  if (conversationHistory.length > MAX_HISTORY) {
-    conversationHistory.shift();
+  /* ===== ETAPA INICIAL ===== */
+  if (estado.etapa === "inicio") {
+    estado.etapa = "qualificacao";
+
+    return respostaAleatoria([
+      "Oi 😄 tudo bem?",
+      "E aí! Como posso te ajudar hoje?",
+      "Olá 👋 posso te explicar algo rapidinho?"
+    ]);
   }
 
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...conversationHistory
-      ],
-      timeout: 20000
-    });
+  /* ===== QUALIFICAÇÃO ===== */
+  if (estado.etapa === "qualificacao") {
 
-    const aiReply = completion.choices[0].message.content;
+    if (
+      mensagem.includes("sim") ||
+      mensagem.includes("quero") ||
+      mensagem.includes("claro")
+    ) {
+      estado.etapa = "interesse";
 
-    // Salva resposta da IA
-    conversationHistory.push({
-      role: "assistant",
-      content: aiReply
-    });
-
-    if (conversationHistory.length > MAX_HISTORY) {
-      conversationHistory.shift();
+      return respostaAleatoria([
+        "Perfeito 🔥 deixa eu te explicar rapidinho",
+        "Show! Vou te explicar de forma simples 😉",
+        "Boa! Presta atenção que é bem fácil"
+      ]);
     }
 
-    res.json({ reply: aiReply });
+    if (
+      mensagem.includes("não") ||
+      mensagem.includes("agora não")
+    ) {
+      return respostaAleatoria([
+        "Sem problemas 😄 se mudar de ideia, me chama",
+        "Tranquilo! Estarei por aqui 👋"
+      ]);
+    }
 
-  } catch (error) {
-    console.error("Erro IA:", error.message);
+    if (
+      mensagem.includes("ajuda") ||
+      mensagem.includes("como funciona") ||
+      mensagem.includes("explica")
+    ) {
+      estado.etapa = "interesse";
 
-    res.json({
-      reply: "Tive um erro rápido aqui 🤖 tenta de novo."
-    });
+      return "Claro 😊 vou te explicar de forma simples, sem enrolação.";
+    }
+
+    return respostaAleatoria([
+      "Você quer entender como funciona?",
+      "Posso te explicar em 1 minutinho 😄",
+      "Quer que eu te explique direitinho?"
+    ]);
   }
+
+  /* ===== INTERESSE ===== */
+  if (estado.etapa === "interesse") {
+    estado.etapa = "oferta";
+
+    return respostaAleatoria([
+      "Funciona assim 👇 você aprende a ganhar dinheiro no digital mesmo começando do zero.",
+      "É um método simples, pensado pra quem nunca trabalhou no digital.",
+      "Mesmo sem experiência, dá pra começar e evoluir."
+    ]);
+  }
+
+  /* ===== OFERTA ===== */
+  if (estado.etapa === "oferta") {
+    estado.etapa = "fechamento";
+
+    return respostaAleatoria([
+      "Se fizer sentido pra você, esse link explica tudo melhor 👇\nhttps://SEULINKAQUI",
+      "Aqui está o link com todos os detalhes 👇\nhttps://SEULINKAQUI",
+      "Nesse link você consegue ver tudo certinho 👇\nhttps://SEULINKAQUI"
+    ]);
+  }
+
+  /* ===== PÓS LINK ===== */
+  if (estado.etapa === "fechamento") {
+    return respostaAleatoria([
+      "Se tiver qualquer dúvida, pode me perguntar 😉",
+      "Fica à vontade pra perguntar qualquer coisa",
+      "Estou aqui se precisar de ajuda 😄"
+    ]);
+  }
+
+  return "Estou aqui 😊";
+}
+
+/* =========================
+   ROTA DA IA
+========================= */
+app.post("/chat", async (req, res) => {
+  const { userId, message } = req.body;
+
+  await delay(Math.floor(Math.random() * 2000) + 1000);
+
+  const resposta = await responderIA(userId, message);
+
+  res.json({ reply: resposta });
 });
 
-/* ===============================
-   ROTA TESTE
-================================ */
-app.get("/status", (req, res) => {
-  res.json({ status: "IA SK Prime Digital ONLINE 🚀" });
-});
-
-/* ===============================
-   START DO SERVIDOR
-================================ */
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("IA SK Prime Digital rodando na porta", PORT);
+/* =========================
+   SERVIDOR
+========================= */
+app.listen(3000, () => {
+  console.log("🤖 IA humana rodando na porta 3000");
 });
