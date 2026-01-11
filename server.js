@@ -4,143 +4,113 @@ const bodyParser = require("body-parser");
 const app = express();
 app.use(bodyParser.json());
 
-/* =========================
-   MEMÓRIA DA CONVERSA
-========================= */
 const memoria = {};
 
-/* =========================
-   FUNÇÕES ÚTEIS
-========================= */
-function respostaAleatoria(lista) {
-  return lista[Math.floor(Math.random() * lista.length)];
+// util
+function rand(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
-
-function normalizar(texto) {
-  return texto.toLowerCase();
+function norm(t) {
+  return t.toLowerCase().trim();
 }
-
 function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(r => setTimeout(r, ms));
 }
 
-/* =========================
-   IA PRINCIPAL
-========================= */
-async function responderIA(userId, mensagem) {
-  mensagem = normalizar(mensagem);
+async function ia(userId, msg) {
+  msg = norm(msg);
 
   if (!memoria[userId]) {
     memoria[userId] = { etapa: "inicio" };
   }
 
-  const estado = memoria[userId];
+  const m = memoria[userId];
 
-  /* ===== ETAPA INICIAL ===== */
-  if (estado.etapa === "inicio") {
-    estado.etapa = "qualificacao";
+  /* ========= INÍCIO ========= */
+  if (m.etapa === "inicio") {
+    m.etapa = "conversa";
 
-    return respostaAleatoria([
+    return rand([
       "Oi 😄 tudo bem?",
-      "E aí! Como posso te ajudar hoje?",
-      "Olá 👋 posso te explicar algo rapidinho?"
+      "E aí 👋 como posso te ajudar?",
+      "Fala comigo 😊"
     ]);
   }
 
-  /* ===== QUALIFICAÇÃO ===== */
-  if (estado.etapa === "qualificacao") {
+  /* ========= CONVERSA HUMANA ========= */
+  if (m.etapa === "conversa") {
 
-    if (
-      mensagem.includes("sim") ||
-      mensagem.includes("quero") ||
-      mensagem.includes("claro")
-    ) {
-      estado.etapa = "interesse";
-
-      return respostaAleatoria([
-        "Perfeito 🔥 deixa eu te explicar rapidinho",
-        "Show! Vou te explicar de forma simples 😉",
-        "Boa! Presta atenção que é bem fácil"
+    if (msg === "oi" || msg === "olá" || msg === "ola") {
+      return rand([
+        "Tudo certo 😄 e você?",
+        "Oi! Como posso te ajudar?",
+        "Fala 😄 no que posso te ajudar?"
       ]);
     }
 
     if (
-      mensagem.includes("não") ||
-      mensagem.includes("agora não")
+      msg.includes("ganhar dinheiro") ||
+      msg.includes("renda") ||
+      msg.includes("trabalhar")
     ) {
-      return respostaAleatoria([
-        "Sem problemas 😄 se mudar de ideia, me chama",
-        "Tranquilo! Estarei por aqui 👋"
-      ]);
+      m.etapa = "interesse";
+      return "Entendi 👀 quer ganhar dinheiro no digital, certo?";
     }
 
-    if (
-      mensagem.includes("ajuda") ||
-      mensagem.includes("como funciona") ||
-      mensagem.includes("explica")
-    ) {
-      estado.etapa = "interesse";
-
-      return "Claro 😊 vou te explicar de forma simples, sem enrolação.";
+    if (msg.includes("ajuda")) {
+      return "Claro 😊 me conta o que você precisa";
     }
 
-    return respostaAleatoria([
-      "Você quer entender como funciona?",
-      "Posso te explicar em 1 minutinho 😄",
-      "Quer que eu te explique direitinho?"
+    return rand([
+      "Entendi 🤔 me explica melhor",
+      "Certo… pode continuar",
+      "Tô te acompanhando 👀"
     ]);
   }
 
-  /* ===== INTERESSE ===== */
-  if (estado.etapa === "interesse") {
-    estado.etapa = "oferta";
+  /* ========= INTERESSE ========= */
+  if (m.etapa === "interesse") {
 
-    return respostaAleatoria([
-      "Funciona assim 👇 você aprende a ganhar dinheiro no digital mesmo começando do zero.",
-      "É um método simples, pensado pra quem nunca trabalhou no digital.",
-      "Mesmo sem experiência, dá pra começar e evoluir."
+    if (msg.includes("sim") || msg.includes("quero")) {
+      m.etapa = "oferta";
+      return "Perfeito 🔥 vou te explicar rapidinho";
+    }
+
+    if (msg.includes("não")) {
+      return "Tranquilo 😊 se mudar de ideia, me chama";
+    }
+
+    return "Você quer aprender isso pra renda extra ou principal?";
+  }
+
+  /* ========= OFERTA ========= */
+  if (m.etapa === "oferta") {
+    m.etapa = "final";
+
+    return rand([
+      "Aqui está o link com tudo explicado 👇\nhttps://SEULINKAQUI",
+      "Nesse link você vê como funciona passo a passo 👇\nhttps://SEULINKAQUI"
     ]);
   }
 
-  /* ===== OFERTA ===== */
-  if (estado.etapa === "oferta") {
-    estado.etapa = "fechamento";
-
-    return respostaAleatoria([
-      "Se fizer sentido pra você, esse link explica tudo melhor 👇\nhttps://SEULINKAQUI",
-      "Aqui está o link com todos os detalhes 👇\nhttps://SEULINKAQUI",
-      "Nesse link você consegue ver tudo certinho 👇\nhttps://SEULINKAQUI"
-    ]);
-  }
-
-  /* ===== PÓS LINK ===== */
-  if (estado.etapa === "fechamento") {
-    return respostaAleatoria([
-      "Se tiver qualquer dúvida, pode me perguntar 😉",
-      "Fica à vontade pra perguntar qualquer coisa",
-      "Estou aqui se precisar de ajuda 😄"
-    ]);
-  }
-
-  return "Estou aqui 😊";
+  /* ========= FINAL ========= */
+  return rand([
+    "Se tiver dúvida, fala comigo 😉",
+    "Tô aqui se precisar 😄",
+    "Pode perguntar sem medo"
+  ]);
 }
 
-/* =========================
-   ROTA DA IA
-========================= */
+/* ========= ROTA ========= */
 app.post("/chat", async (req, res) => {
   const { userId, message } = req.body;
 
-  await delay(Math.floor(Math.random() * 2000) + 1000);
+  await delay(Math.random() * 2000 + 800);
 
-  const resposta = await responderIA(userId, message);
-
-  res.json({ reply: resposta });
+  const reply = await ia(userId || "anonimo", message);
+  res.json({ reply });
 });
 
-/* =========================
-   SERVIDOR
-========================= */
 app.listen(3000, () => {
-  console.log("🤖 IA humana rodando na porta 3000");
+  console.log("🔥 IA HUMANA ONLINE - PORTA 3000");
 });
