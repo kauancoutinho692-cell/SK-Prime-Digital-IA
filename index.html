@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>SK IA HARD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{
+      margin:0; background:#0e0e0e; color:#fff; font-family:Arial, sans-serif;
+      display:flex; align-items:center; justify-content:center; height:100vh;
+    }
+    .box{
+      width:420px; max-width:95%;
+      background:#1a1a1a; padding:14px; border-radius:8px;
+      box-shadow:0 0 20px rgba(0,0,0,.4);
+    }
+    h2{ text-align:center; margin:6px 0 10px; }
+    #chat{
+      height:300px; background:#111; padding:10px;
+      overflow-y:auto; border-radius:6px; font-size:14px;
+    }
+    .row{ margin:6px 0; }
+    input{
+      width:100%; padding:10px; margin-top:8px;
+      border:none; border-radius:6px; outline:none;
+    }
+    b{ color:#00ff99; }
+    .hint{ opacity:.7; font-size:12px; text-align:center; margin-top:6px; }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>SK IA HARD</h2>
+  <div id="chat"></div>
+  <input id="msg" placeholder="Digite e aperte Enter" />
+  <div class="hint">IA HARD • Anti-travamento • Modo direto</div>
+</div>
+
+<script>
+/* ===========================
+   CONFIGURAÇÃO
+=========================== */
+
+// 🔑 COLE SUA API KEY AQUI
+const API_KEY = "SUA_API_KEY_AQUI";
+
+// 🧠 PROMPT CENTRAL — IA HARD
+const SYSTEM_PROMPT = `
+PROMPT FINAL ABSOLUTO — IA HARD, UNIVERSAL, ANTI-TRAVAMENTO
+
+IDENTIDADE:
+Você é a SK IA HARD, mente digital universal de alta performance.
+
+ANTI-TRAVAMENTO:
+Nunca fique sem resposta. Nunca responda apenas “não sei”.
+Nunca abandone a conversa. Nunca entre em loop.
+
+GESTÃO DO DESCONHECIDO:
+Se algo for conhecido, explique.
+Se for parcial, apresente hipóteses.
+Se for desconhecido, analise logicamente.
+Se for impossível, explique e proponha alternativas.
+Nunca invente fatos.
+
+RACIOCÍNIO:
+Quebre problemas, conecte áreas, use analogias,
+avalie riscos e consequências, escolha o melhor raciocínio.
+
+VALOR:
+Sempre entregue algo útil (explicação, plano, ideia, próximo passo).
+
+ADAPTAÇÃO:
+Ajuste linguagem ao usuário. Seja simples quando necessário e profundo quando fizer sentido.
+
+ESTABILIDADE:
+Em temas sensíveis, seja calmo, claro e responsável.
+
+MODO HARD:
+Direto, sem enrolação, focado em resultado e verdade técnica.
+
+REGRA ABSOLUTA:
+Nunca trave. Nunca abandone. Sempre avance com clareza e honestidade.
+`;
+
+/* ===========================
+   CHAT
+=========================== */
+
+const input = document.getElementById("msg");
+const chat  = document.getElementById("chat");
+
+function addMsg(who, text){
+  const p = document.createElement("p");
+  p.className = "row";
+  p.innerHTML = `<b>${who}:</b> ${text}`;
+  chat.appendChild(p);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+input.addEventListener("keypress", async (e) => {
+  if (e.key === "Enter" && input.value.trim()) {
+    const userText = input.value.trim();
+    input.value = "";
+    addMsg("Você", userText);
+
+    try{
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "Authorization":"Bearer " + API_KEY
+        },
+        body: JSON.stringify({
+          model:"gpt-4.1-mini",
+          messages:[
+            { role:"system", content:SYSTEM_PROMPT },
+            { role:"user", content:userText }
+          ],
+          temperature: 0.6
+        })
+      });
+
+      if(!r.ok){
+        addMsg("SK IA","Erro de conexão. Em produção use backend para evitar bloqueio.");
+        return;
+      }
+
+      const d = await r.json();
+      const reply = d.choices?.[0]?.message?.content || "Sem resposta.";
+      addMsg("SK IA", reply);
+
+    }catch(err){
+      addMsg("SK IA","Falha de rede. Para uso profissional, utilize backend.");
+    }
+  }
+});
+</script>
+
+</body>
+</html>
