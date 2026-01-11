@@ -8,152 +8,137 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: #fff;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      color: #fff;
     }
 
-    .chat-box {
+    .container {
       width: 100%;
       max-width: 420px;
-      height: 90vh;
       background: #111;
-      border-radius: 16px;
+      border-radius: 15px;
+      padding: 15px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
       display: flex;
       flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 0 30px rgba(0,0,0,0.6);
     }
 
-    .header {
-      background: #000;
-      padding: 15px;
+    .logo {
       text-align: center;
-      border-bottom: 1px solid #222;
+      margin-bottom: 10px;
     }
 
-    .header img {
-      width: 120px;
-      margin-bottom: 8px;
+    .logo img {
+      width: 200px;
     }
 
-    .header h1 {
-      font-size: 18px;
-      margin: 0;
-      color: #00ffcc;
-    }
-
-    .messages {
+    .chat {
       flex: 1;
-      padding: 15px;
+      background: #1c1c1c;
+      border-radius: 10px;
+      padding: 10px;
       overflow-y: auto;
+      margin-bottom: 10px;
+    }
+
+    .msg {
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      max-width: 80%;
       font-size: 14px;
     }
 
-    .msg-user {
-      text-align: right;
-      margin-bottom: 10px;
+    .bot {
+      background: #2b6cff;
+      align-self: flex-start;
     }
 
-    .msg-user span {
-      background: #00ffcc;
+    .user {
+      background: #00c896;
+      align-self: flex-end;
       color: #000;
-      padding: 8px 12px;
-      border-radius: 12px;
-      display: inline-block;
-      max-width: 80%;
-    }
-
-    .msg-ia {
-      text-align: left;
-      margin-bottom: 10px;
-    }
-
-    .msg-ia span {
-      background: #222;
-      padding: 8px 12px;
-      border-radius: 12px;
-      display: inline-block;
-      max-width: 80%;
     }
 
     .input-area {
       display: flex;
-      border-top: 1px solid #222;
+      gap: 5px;
     }
 
-    .input-area input {
+    input {
       flex: 1;
-      padding: 12px;
+      padding: 10px;
+      border-radius: 8px;
       border: none;
       outline: none;
-      font-size: 14px;
     }
 
-    .input-area button {
-      background: #00ffcc;
+    button {
+      padding: 10px 15px;
       border: none;
-      padding: 0 20px;
+      border-radius: 8px;
+      background: #ffcc00;
       cursor: pointer;
       font-weight: bold;
-    }
-
-    .footer {
-      text-align: center;
-      font-size: 11px;
-      color: #888;
-      padding: 6px;
-      background: #000;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="chat-box">
-    <div class="header">
+  <div class="container">
+
+    <div class="logo">
       <img src="logo.png" alt="SK Prime Digital">
-      <h1>SK Prime Digital IA</h1>
     </div>
 
-    <div class="messages" id="messages">
-      <div class="msg-ia">
-        <span>Olá 👋 Sou a IA da SK Prime Digital. Como posso te ajudar hoje?</span>
+    <div class="chat" id="chat">
+      <div class="msg bot">
+        Olá 👋 Eu sou a IA da <b>SK Prime Digital</b>.<br>
+        Quer ganhar dinheiro no digital? Responda <b>SIM</b> ou <b>NÃO</b>.
       </div>
     </div>
 
     <div class="input-area">
-      <input type="text" id="input" placeholder="Digite sua mensagem..." />
-      <button onclick="enviar()">Enviar</button>
+      <input type="text" id="input" placeholder="Digite aqui...">
+      <button onclick="sendMsg()">Enviar</button>
     </div>
 
-    <div class="footer">
-      IA Profissional • Atendimento Automatizado
-    </div>
   </div>
 
   <script>
-    function enviar() {
+    function sendMsg() {
       const input = document.getElementById("input");
-      const msg = input.value.trim();
-      if (!msg) return;
+      const chat = document.getElementById("chat");
+      const text = input.value.trim();
+      if (text === "") return;
 
-      const messages = document.getElementById("messages");
-
-      messages.innerHTML += `
-        <div class="msg-user"><span>${msg}</span></div>
-      `;
-
-      messages.innerHTML += `
-        <div class="msg-ia"><span>Recebido ✅ Em breve resposta automática.</span></div>
-      `;
+      const userMsg = document.createElement("div");
+      userMsg.className = "msg user";
+      userMsg.innerText = text;
+      chat.appendChild(userMsg);
 
       input.value = "";
-      messages.scrollTop = messages.scrollHeight;
+      chat.scrollTop = chat.scrollHeight;
+
+      setTimeout(() => {
+        const botMsg = document.createElement("div");
+        botMsg.className = "msg bot";
+
+        if (text.toLowerCase().includes("sim")) {
+          botMsg.innerHTML = "Perfeito 🔥<br>Clique no link e comece agora 👉 <br><b>SEU LINK AQUI</b>";
+        } else {
+          botMsg.innerHTML = "Sem problemas 👍 Se mudar de ideia, estarei aqui.";
+        }
+
+        chat.appendChild(botMsg);
+        chat.scrollTop = chat.scrollHeight;
+      }, 1000);
     }
   </script>
 
