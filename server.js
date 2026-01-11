@@ -4,12 +4,14 @@ import cors from "cors";
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 
+// 🔐 OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+// 🧠 PILAR 1 — CÉREBRO DA IA
 const systemPrompt = `
 Você é a IA oficial da SK Prime Digital.
 Você funciona como um assistente completo, igual ao ChatGPT.
@@ -25,27 +27,57 @@ Você nunca repete respostas.
 Você se adapta ao contexto da conversa.
 `;
 
+// 🧠 PILAR 3 — MEMÓRIA (HISTÓRICO)
+let conversationHistory = [];
+
+// 🧹 Limite de memória (anti-travamento)
+const MAX_HISTORY = 10;
+
 app.post("/chat", async (req, res) => {
   const userMessage = req.body.message;
+
+  // Salva mensagem do usuário
+  conversationHistory.push({
+    role: "user",
+    content: userMessage
+  });
+
+  // Limita o tamanho da memória
+  if (conversationHistory.length > MAX_HISTORY) {
+    conversationHistory.shift();
+  }
 
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage }
+        ...conversationHistory
       ]
     });
 
-    res.json({
-      reply: completion.choices[0].message.content
+    const aiReply = completion.choices[0].message.content;
+
+    // Salva resposta da IA
+    conversationHistory.push({
+      role: "assistant",
+      content: aiReply
     });
 
+    // Limita de novo
+    if (conversationHistory.length > MAX_HISTORY) {
+      conversationHistory.shift();
+    }
+
+    res.json({ reply: aiReply });
+
   } catch (error) {
-    res.status(500).json({ reply: "Erro na IA" });
+    res.json({
+      reply: "Tive um problema agora 😥 tenta de novo."
+    });
   }
 });
 
 app.listen(3000, () => {
-  console.log("IA rodando");
+  console.log("IA SK Prime Digital com MEMÓRIA rodando 🚀");
 });
